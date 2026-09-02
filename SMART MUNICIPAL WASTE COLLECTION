@@ -1,0 +1,150 @@
+import java.util.*;
+
+// Encapsulated Citizen Model
+class Citizen {
+    private final int residentId;
+    private final String residentName;
+
+    Citizen(int residentId, String residentName) {
+        this.residentId = residentId;
+        this.residentName = residentName;
+    }
+
+    public int getResidentId() {
+        return residentId;
+    }
+
+    public String getResidentName() {
+        return residentName;
+    }
+
+    @Override
+    public String toString() {
+        return "[ID: " + residentId + ", Name: " + residentName + "]";
+    }
+}
+
+// Base Abstraction for Municipal Receptacles
+abstract class WasteReceptacle {
+    protected int currentFillLevel;
+
+    WasteReceptacle(int currentFillLevel) {
+        this.currentFillLevel = currentFillLevel;
+    }
+
+    abstract void evaluateCapacity();
+}
+
+// Specialized Sensor-Equipped Container demonstrating Dynamic Polymorphism
+class SensorDumpster extends WasteReceptacle {
+    private static final int THRESHOLD_LIMIT = 80;
+
+    SensorDumpster(int currentFillLevel) {
+        super(currentFillLevel);
+    }
+
+    @Override
+    void evaluateCapacity() {
+        if (currentFillLevel >= THRESHOLD_LIMIT) {
+            System.out.println("ALERT: Dumpster fill level at " + currentFillLevel + "%! Triggering immediate route alert.");
+        } else {
+            System.out.println("STATUS: Normal. Dumpster capacity at " + currentFillLevel + "%.");
+        }
+    }
+}
+
+// Custom Exception for Validation
+class InvalidResidentException extends Exception {
+    InvalidResidentException(String message) {
+        super(message);
+    }
+}
+
+public class MunicipalWasteDispatchSystem {
+
+    // Java Collections Framework Integration
+    private static final List<Citizen> registeredCitizens = new ArrayList<>();
+    private static final Set<Integer> activeBins = new HashSet<>();
+    private static final Map<Integer, String> truckFleet = new HashMap<>();
+
+    // Synchronized Request Processor
+    public static synchronized void schedulePickup(int residentId) throws InvalidResidentException {
+        if (residentId <= 0) {
+            throw new InvalidResidentException("Pickup Rejected: Resident ID must be a positive integer.");
+        }
+
+        boolean found = false;
+        for (Citizen citizen : registeredCitizens) {
+            if (citizen.getResidentId() == residentId) {
+                System.out.println("Dispatch Confirmed: Pickup allocated for " + citizen.getResidentName() + " (ID: " + residentId + ").");
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            System.out.println("Dispatch Confirmed: Ad-hoc pickup queued for Unregistered ID #" + residentId + ".");
+        }
+    }
+
+    // Multithreaded Monitoring Engine
+    static class RouteSupervisorThread extends Thread {
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(200); // Brief simulation delay
+                System.out.println("[BACKGROUND THREAD] Telemetry supervisor active: Monitoring live vehicle routes and bins.");
+            } catch (InterruptedException e) {
+                System.out.println("Supervisor thread interrupted.");
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        // Preload operational data
+        registeredCitizens.add(new Citizen(101, "Jayasree"));
+        registeredCitizens.add(new Citizen(102, "Kavya"));
+        activeBins.add(701);
+        activeBins.add(702);
+        truckFleet.put(10, "Compactor-Truck-1");
+        truckFleet.put(11, "Recycling-Van-2");
+
+        System.out.println("=================================================");
+        System.out.println("   MUNICIPAL WASTE DISPATCH & SENSOR SYSTEM      ");
+        System.out.println("=================================================");
+        System.out.println("Registered Citizens : " + registeredCitizens);
+        System.out.println("Monitored Bin IDs   : " + activeBins);
+        System.out.println("Available Fleet     : " + truckFleet);
+        System.out.println("-------------------------------------------------");
+
+        // Input and Exception Handling Flow
+        System.out.print("Enter Resident ID to book pickup: ");
+        int inputId = scanner.nextInt();
+
+        try {
+            schedulePickup(inputId);
+        } catch (InvalidResidentException e) {
+            System.err.println("Validation Error: " + e.getMessage());
+        }
+
+        // Dynamic Method Dispatch / Polymorphism
+        WasteReceptacle sensorBin = new SensorDumpster(88);
+        sensorBin.evaluateCapacity();
+
+        // Safe Iteration through Iterator
+        System.out.println("\n--- Current Resident Registry Traversal ---");
+        Iterator<Citizen> citizenIterator = registeredCitizens.iterator();
+        while (citizenIterator.hasNext()) {
+            Citizen current = citizenIterator.next();
+            System.out.println("Record -> " + current);
+        }
+
+        // Concurrency Initiation
+        RouteSupervisorThread supervisor = new RouteSupervisorThread();
+        supervisor.start();
+
+        scanner.close();
+    }
+}
