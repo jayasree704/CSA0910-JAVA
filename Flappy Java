@@ -1,0 +1,155 @@
+package com.flappyjava;
+
+import javax.sound.midi.MidiChannel;
+import javax.sound.midi.MidiSystem;
+import javax.sound.midi.MidiUnavailableException;
+import javax.sound.midi.Synthesizer;
+
+/**
+ * Technical Technique: Exception Handling, Audio Synthesis.
+ * Generates retro 8-bit sounds procedurally using the javax.sound.midi API.
+ */
+public class SoundSynth {
+    private Synthesizer synth;
+    private MidiChannel channel;
+    private boolean isAvailable = false;
+    private boolean isMuted = false;
+
+    public SoundSynth() {
+        initSynth();
+    }
+
+    private void initSynth() {
+        try {
+            synth = MidiSystem.getSynthesizer();
+            synth.open();
+            
+            // Get first channel (usually melodic)
+            MidiChannel[] channels = synth.getChannels();
+            if (channels != null && channels.length > 0) {
+                channel = channels[0];
+                
+                // Select instrument: 81 is Lead 2 (Sawtooth), which sounds very retro!
+                channel.programChange(80); // Lead 1 (square) or 80/81 are retro leads
+                isAvailable = true;
+                System.out.println("MIDI: Synthesizer loaded successfully.");
+            }
+        } catch (MidiUnavailableException e) {
+            System.err.println("MIDI WARNING: MIDI Synthesizer is not available on this system.");
+            isAvailable = false;
+        } catch (Exception e) {
+            System.err.println("MIDI WARNING: Failed to initialize MIDI channels. Sound is disabled.");
+            isAvailable = false;
+        }
+    }
+
+    public void setMuted(boolean muted) {
+        this.isMuted = muted;
+    }
+
+    public boolean isMuted() {
+        return this.isMuted;
+    }
+
+    public void toggleMute() {
+        this.isMuted = !this.isMuted;
+    }
+
+    /**
+     * Jump glide: Quick arpeggio ascending pitch.
+     */
+    public void playJump() {
+        if (!isAvailable || isMuted) return;
+        
+        // Spawn a background thread to play so it doesn't block the gameplay thread
+        new Thread(() -> {
+            try {
+                // Ascending pitch glide
+                channel.noteOn(60, 90); // C5
+                Thread.sleep(30);
+                channel.noteOff(60);
+                channel.noteOn(65, 90); // F5
+                Thread.sleep(35);
+                channel.noteOff(65);
+                channel.noteOn(70, 100); // Bb5
+                Thread.sleep(40);
+                channel.noteOff(70);
+            } catch (InterruptedException e) {
+                // Handle thread interrupt silently
+            }
+        }).start();
+    }
+
+    /**
+     * Score beep: High double tone.
+     */
+    public void playScore() {
+        if (!isAvailable || isMuted) return;
+
+        new Thread(() -> {
+            try {
+                channel.noteOn(76, 80); // E6
+                Thread.sleep(60);
+                channel.noteOff(76);
+                channel.noteOn(83, 100); // B6
+                Thread.sleep(120);
+                channel.noteOff(83);
+            } catch (InterruptedException e) {
+                // Handle exception
+            }
+        }).start();
+    }
+
+    /**
+     * Speed Up Alarm: Ascending alarm chord.
+     */
+    public void playSpeedUp() {
+        if (!isAvailable || isMuted) return;
+
+        new Thread(() -> {
+            try {
+                int[] chord = {60, 64, 67, 72, 76, 79};
+                for (int note : chord) {
+                    channel.noteOn(note, 90);
+                    Thread.sleep(50);
+                    channel.noteOff(note);
+                }
+            } catch (InterruptedException e) {
+                // Handle exception
+            }
+        }).start();
+    }
+
+    /**
+     * Collision Boom: low drum/noise note.
+     */
+    public void playCrash() {
+        if (!isAvailable || isMuted) return;
+
+        new Thread(() -> {
+            try {
+                // Change to percussion lead temporarily
+                channel.programChange(116); // Taiko drum or steel drum (very low note)
+                channel.noteOn(35, 127); // Low bass note
+                Thread.sleep(350);
+                channel.noteOff(35);
+                
+                // Change back to lead sawtooth
+                channel.programChange(80);
+            } catch (InterruptedException e) {
+                // Handle exception
+            }
+        }).start();
+    }
+
+    public void playClick() {
+        if (!isAvailable || isMuted) return;
+        channel.noteOn(72, 70);
+        try {
+            Thread.sleep(25);
+        } catch (InterruptedException e) {
+            // Handle
+        }
+        channel.noteOff(72);
+    }
+}
